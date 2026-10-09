@@ -1,0 +1,6 @@
+{
+  "name": "Vault 67 - RobCo Wasteland Geek Merch",
+  "description": "Официальный магазин гик-товаров, аниме и мерча Пустоши Убежища 67 в стилистике терминалов RobCo и Pip-Boy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

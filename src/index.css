@@ -1,0 +1,372 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --crt-green: #15FF0E;
+    --crt-green-dim: #0ea60a;
+    --crt-bg: #0D1117;
+    --crt-amber: #FFB000;
+    --crt-cyan: #00E5FF;
+
+    /* Pre-war 1950s palette */
+    --vault-blue: #0033A0;
+    --vault-yellow: #FFD100;
+    --prewar-bg: #F5EFEB;
+    --prewar-card: #FFFFFF;
+    --prewar-text: #1C2331;
+    --prewar-border: #0033A0;
+  }
+
+  body {
+    font-family: 'Roboto Mono', 'Share Tech Mono', ui-monospace, SFMono-Regular, monospace;
+    background-color: var(--crt-bg);
+    color: var(--crt-green);
+    overflow-x: hidden;
+    letter-spacing: 0.02em;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Принудительная темная тема для всех выпадающих списков, опций и инпутов */
+select, option, optgroup {
+  background-color: #0D1117 !important;
+  color: #15FF0E !important;
+  font-family: 'Roboto Mono', monospace;
+}
+
+select:focus, option:focus, option:checked {
+  background-color: #15FF0E !important;
+  color: #0D1117 !important;
+}
+
+.theme-pre-war select,
+.theme-pre-war option,
+.theme-pre-war optgroup {
+  background-color: #FFFFFF !important;
+  color: #0033A0 !important;
+}
+
+.theme-pre-war select:focus,
+.theme-pre-war option:focus,
+.theme-pre-war option:checked {
+  background-color: #FFD100 !important;
+  color: #0033A0 !important;
+}
+
+/* === CRT SCANLINES & SCREEN EFFECT === */
+.crt-screen {
+  position: relative;
+}
+
+.crt-screen::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%);
+  background-size: 100% 4px;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.65;
+}
+
+@media (max-width: 768px) {
+  .crt-screen::before {
+    opacity: 0.35;
+    background-size: 100% 6px;
+  }
+}
+
+.crt-vignette {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.85), inset 0 0 160px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  z-index: 41;
+}
+
+/* CRT sweep bar simulation */
+@keyframes crtSweep {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.crt-sweep-line {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(to bottom, rgba(21, 255, 14, 0), rgba(21, 255, 14, 0.18), rgba(21, 255, 14, 0));
+  pointer-events: none;
+  z-index: 42;
+  animation: crtSweep 8s linear infinite;
+}
+
+/* Phosphor Text Glow */
+.pipboy-glow {
+  text-shadow: 0 0 3px rgba(21, 255, 14, 0.7), 0 0 8px rgba(21, 255, 14, 0.4);
+}
+
+.pipboy-amber-glow {
+  text-shadow: 0 0 3px rgba(255, 176, 0, 0.7), 0 0 8px rgba(255, 176, 0, 0.4);
+}
+
+.pipboy-cyan-glow {
+  text-shadow: 0 0 3px rgba(0, 229, 255, 0.7), 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+/* Terminal Blinking Cursor */
+@keyframes blinkCursor {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  background-color: currentColor;
+  vertical-align: -0.15em;
+  animation: blinkCursor 0.9s infinite steps(1);
+}
+
+/* Pip-Boy Button Hover Invert (Flat, Thick Borders, Square) */
+.pipboy-btn {
+  border: 2px solid currentColor;
+  transition: all 0.08s ease-in-out;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pipboy-btn:hover:not(:disabled) {
+  background-color: currentColor;
+  color: #0D1117 !important;
+}
+
+.pipboy-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Pip-Boy Card with Thick Border */
+.pipboy-border {
+  border: 2px solid currentColor;
+}
+
+.pipboy-border-thin {
+  border: 1px solid currentColor;
+}
+
+/* Pre-War 50s Vault-Tec Mode Styles */
+.theme-pre-war {
+  background-color: var(--prewar-bg) !important;
+  color: var(--prewar-text) !important;
+}
+
+.theme-pre-war .crt-screen::before {
+  display: none !important;
+}
+
+.theme-pre-war .crt-vignette {
+  display: none !important;
+}
+
+.theme-pre-war .crt-sweep-line {
+  display: none !important;
+}
+
+.theme-pre-war .pipboy-glow {
+  text-shadow: none !important;
+}
+
+.theme-pre-war .pipboy-btn {
+  border: 2px solid var(--vault-blue);
+  background-color: var(--vault-blue);
+  color: #FFFFFF !important;
+  border-radius: 4px;
+}
+
+.theme-pre-war .pipboy-btn:hover:not(:disabled) {
+  background-color: var(--vault-yellow) !important;
+  color: var(--vault-blue) !important;
+  border-color: var(--vault-blue);
+}
+
+/* Image green scanline filter that lifts on hover */
+.pipboy-image-filter {
+  filter: sepia(1) saturate(5) hue-rotate(85deg) contrast(1.15) brightness(0.9);
+  transition: filter 0.25s ease;
+}
+
+.group:hover .pipboy-image-filter,
+.pipboy-image-filter:hover {
+  filter: none;
+}
+
+/* Pre-war mode ignores green filter */
+.theme-pre-war .pipboy-image-filter {
+  filter: none !important;
+}
+
+/* Custom Scrollbar in Pip-Boy style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #06090c;
+  border: 1px solid #1a271f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--crt-green);
+  border: 1px solid #000;
+}
+
+.theme-pre-war ::-webkit-scrollbar-track {
+  background: #e6dfd8;
+}
+
+.theme-pre-war ::-webkit-scrollbar-thumb {
+  background: var(--vault-blue);
+}
+
+/* === FALLOUT NUKA-COLA VENDING MACHINE LIGHT-UP SEQUENCE === */
+@keyframes nukaNeonStart {
+  0% {
+    opacity: 0.08;
+    text-shadow: none;
+    filter: brightness(0.4);
+  }
+  15% {
+    opacity: 0.35;
+    text-shadow: 0 0 4px #ff2a2a;
+    filter: brightness(0.7);
+  }
+  20% {
+    opacity: 0.05;
+    text-shadow: none;
+    filter: brightness(0.3);
+  }
+  38% {
+    opacity: 0.85;
+    text-shadow: 0 0 10px #ff2222, 0 0 20px #e60000;
+    filter: brightness(1.2);
+  }
+  44% {
+    opacity: 0.2;
+    text-shadow: 0 0 2px #ff2222;
+    filter: brightness(0.5);
+  }
+  62% {
+    opacity: 0.95;
+    text-shadow: 0 0 12px #ff3333, 0 0 24px #ff0000;
+    filter: brightness(1.3);
+  }
+  68% {
+    opacity: 0.45;
+    text-shadow: 0 0 5px #ff2222;
+  }
+  82% {
+    opacity: 1;
+    text-shadow: 0 0 15px #ff3333, 0 0 30px #ff0000, 0 0 45px #cc0000;
+    filter: brightness(1.4);
+  }
+  100% {
+    opacity: 1;
+    text-shadow: 0 0 12px #ff3333, 0 0 25px #ff0000, 0 0 35px #b30000;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes nukaChamberIgnition {
+  0% {
+    opacity: 0.05;
+    filter: brightness(0.3);
+  }
+  25% {
+    opacity: 0.3;
+    filter: brightness(0.6);
+  }
+  35% {
+    opacity: 0.05;
+  }
+  55% {
+    opacity: 0.75;
+    filter: brightness(1.1);
+  }
+  65% {
+    opacity: 0.35;
+  }
+  85%, 100% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+}
+
+@keyframes nukaIceColdIgnition {
+  0%, 45% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.8;
+  }
+  58% {
+    opacity: 0.1;
+  }
+  75%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.7), inset 0 0 10px rgba(0, 229, 255, 0.5);
+  }
+}
+
+@keyframes nukaNeonHum {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 10px rgba(255, 40, 40, 0.8));
+  }
+  50% {
+    opacity: 0.94;
+    filter: drop-shadow(0 0 16px rgba(255, 30, 30, 0.95));
+  }
+  52% {
+    opacity: 0.85;
+  }
+  54% {
+    opacity: 0.98;
+  }
+}
+
+@keyframes quantumCorePulse {
+  0%, 100% {
+    box-shadow: 0 0 15px #00e5ff, 0 0 30px #0088cc, inset 0 0 15px #00e5ff;
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 28px #00e5ff, 0 0 50px #00aaff, inset 0 0 25px #00e5ff;
+    filter: brightness(1.3);
+  }
+}
+
+.nuka-neon-animating {
+  animation: nukaNeonStart 1.8s ease-in-out forwards, nukaNeonHum 4s ease-in-out 1.8s infinite;
+}
+
+.nuka-chamber-animating {
+  animation: nukaChamberIgnition 1.9s ease-in-out forwards;
+}
+
+.nuka-icecold-animating {
+  animation: nukaIceColdIgnition 2.1s ease-out forwards;
+}
+
+.nuka-quantum-pulse {
+  animation: quantumCorePulse 2.4s ease-in-out infinite;
+}
+
