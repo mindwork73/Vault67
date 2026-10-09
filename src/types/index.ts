@@ -72,6 +72,16 @@ export type OrderStatus =
   | 'DELIVERED_TO_VAULT' 
   | 'CANCELLED';
 
+export interface AddressDetails {
+  region: string; // Регион / Сектор Пустоши (напр. Пустошь Мохаве, Столичная Пустошь, Московская обл.)
+  city: string;   // Город / Поселение (Новый Вегас, Даймонд-Сити, Мегатонна, Москва)
+  street: string; // Улица / Проспект / Ярус
+  building: string; // Дом / Бункер / Корпус
+  apartment?: string; // Квартира / Каюта / Отсек
+  postalCode?: string; // Почтовый индекс / RobCo Zip
+  landmark?: string; // Ориентир для каравана (возле статуи Брамина, шлюз 4 и т.д.)
+}
+
 export interface Order {
   id: string;
   date: string;
@@ -83,6 +93,9 @@ export interface Order {
   totalRub?: number;
   status: OrderStatus;
   trackingNumber: string;
+  telegram?: string;
+  phone?: string;
+  addressDetails?: AddressDetails;
 }
 
 export interface UserProfile {
@@ -97,7 +110,9 @@ export interface UserProfile {
   realName?: string;
   email?: string;
   phone?: string;
+  telegram?: string; // Telegram пользователя для связи с караваном (@username или ссылка)
   wastelandAddress?: string;
+  addressDetails?: AddressDetails; // Детальная структурированная форма адреса
   bio?: string;
   level?: number;
   karma?: string;

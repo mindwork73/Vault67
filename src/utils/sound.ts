@@ -271,6 +271,33 @@ export const soundManager = {
     }
   },
 
+  // Звуковой сигнал терминала (RobCo Beep / ввод данных)
+  playBeep: () => {
+    if (soundMuted) return;
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1760, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+
+      gain.gain.setValueAtTime(0.09, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.09);
+    } catch {
+      // ignore
+    }
+  },
+
   // Звук включения автомата Nuka-Cola (искрение стартера и розжиг неона)
   playNukaIgnition: () => {
     if (soundMuted) return;

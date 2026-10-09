@@ -684,6 +684,12 @@ export const StashPage: React.FC = () => {
                 <span className="opacity-75">ПОЛУЧАТЕЛЬ:</span>
                 <span className="font-bold">{selectedOrderReceipt.recipientName}</span>
               </div>
+              {selectedOrderReceipt.telegram && (
+                <div className="flex justify-between border-b pb-1 border-current/20 text-sky-400">
+                  <span className="opacity-75">СВЯЗЬ (TELEGRAM):</span>
+                  <span className="font-bold font-mono">{selectedOrderReceipt.telegram}</span>
+                </div>
+              )}
               <div className="flex justify-between border-b pb-1 border-current/20">
                 <span className="opacity-75">ТРЕКИНГ КАРАВАНА:</span>
                 <span className="font-bold text-amber-400">{selectedOrderReceipt.trackingNumber}</span>

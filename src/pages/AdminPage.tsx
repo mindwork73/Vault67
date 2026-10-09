@@ -1342,6 +1342,11 @@ export const AdminPage: React.FC = () => {
 
                     <td className="p-3">
                       <div className="font-bold">{o.recipientName}</div>
+                      {o.telegram && (
+                        <div className="text-[10px] text-sky-400 font-bold">
+                          TG: {o.telegram}
+                        </div>
+                      )}
                       <div className="text-[10px] opacity-75 max-w-xs truncate">{o.wastelandLocation}</div>
                     </td>
 
@@ -2176,6 +2181,19 @@ export const AdminPage: React.FC = () => {
                   <span className="opacity-70 block text-[10px]">СПОСОБ РАСЧЕТА:</span>
                   <span className="font-bold">{viewingOrder.paymentMethod}</span>
                 </div>
+                {viewingOrder.telegram && (
+                  <div className="col-span-2 text-sky-400">
+                    <span className="opacity-70 block text-[10px] text-current">TELEGRAM ДЛЯ СВЯЗИ:</span>
+                    <a
+                      href={`https://t.me/${viewingOrder.telegram.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold underline flex items-center gap-1"
+                    >
+                      <span>{viewingOrder.telegram}</span>
+                    </a>
+                  </div>
+                )}
                 <div className="col-span-2">
                   <span className="opacity-70 block text-[10px]">КООРДИНАТЫ ДОСТАВКИ:</span>
                   <span className="font-bold">{viewingOrder.wastelandLocation}</span>

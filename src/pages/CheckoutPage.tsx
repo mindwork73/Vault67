@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useVaultStore } from '../store/useVaultStore';
 import { soundManager } from '../utils/sound';
 import { Order } from '../types';
+import { WASTELAND_ADDRESS_PRESETS, WastelandAddressPreset } from '../data/wastelandLocations';
 import { 
   ArrowLeft, 
   CreditCard, 
@@ -14,21 +15,65 @@ import {
   Terminal, 
   Loader2,
   PackageCheck,
-  Navigation
+  Navigation,
+  Sparkles,
+  ExternalLink,
+  RotateCcw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PipBoyOrderTracker } from '../components/common/PipBoyOrderTracker';
+
+const TelegramIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.37.74-.56 2.92-1.27 4.86-2.11 5.83-2.52 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z" />
+  </svg>
+);
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const { cart, placeOrder, caps, theme, user } = useVaultStore();
   const isPreWar = theme === 'pre-war';
 
-  // Поля формы
-  const [recipientName, setRecipientName] = useState(user.callsign || 'Житель Убежища 67');
-  const [citySector, setCitySector] = useState('Столичная Пустошь, Сектор 4');
-  const [streetVault, setStreetVault] = useState('Улица Ржавых Винтокрылов, Бункер 12');
-  const [vaultZip, setVaultZip] = useState('67-VAULT-2077');
+  // Поля формы с автоматической подстановкой из профиля жителя
+  const [recipientName, setRecipientName] = useState(user.realName || user.callsign || 'Житель Убежища 67');
+  const [citySector, setCitySector] = useState(
+    user.addressDetails?.city 
+      ? `${user.addressDetails.city}, ${user.addressDetails.region}` 
+      : 'Новый Вегас, Пустошь Мохаве'
+  );
+  const [streetVault, setStreetVault] = useState(
+    user.addressDetails?.street 
+      ? `${user.addressDetails.street}, ${user.addressDetails.building}${user.addressDetails.apartment ? `, ${user.addressDetails.apartment}` : ''}` 
+      : 'Стрип, Авеню Хауса, Казино Лаки 38'
+  );
+  const [vaultZip, setVaultZip] = useState(user.addressDetails?.postalCode || 'NV-89109-ROBCO');
+  const [telegram, setTelegram] = useState(user.telegram || '@wanderer_vault67');
+  const [landmarkNote, setLandmarkNote] = useState(user.addressDetails?.landmark || 'Шлюз безопасности сектора');
+
+  // Быстрое автозаполнение из профиля
+  const handleLoadFromProfile = () => {
+    soundManager.playBeep();
+    setRecipientName(user.realName || user.callsign || 'Житель Убежища 67');
+    if (user.addressDetails) {
+      setCitySector(`${user.addressDetails.city}, ${user.addressDetails.region}`);
+      setStreetVault(`${user.addressDetails.street}, ${user.addressDetails.building}${user.addressDetails.apartment ? `, ${user.addressDetails.apartment}` : ''}`);
+      setVaultZip(user.addressDetails.postalCode || '67-VAULT-2077');
+      setLandmarkNote(user.addressDetails.landmark || '');
+    }
+    if (user.telegram) {
+      setTelegram(user.telegram);
+    }
+  };
+
+  // Быстрое применение пресета
+  const handleApplyPreset = (preset: WastelandAddressPreset) => {
+    soundManager.playBeep();
+    setCitySector(`${preset.city}, ${preset.region}`);
+    setStreetVault(`${preset.street}, ${preset.building}${preset.apartment ? `, ${preset.apartment}` : ''}`);
+    setVaultZip(preset.postalCode);
+    setLandmarkNote(preset.landmark);
+  };
+
   const [paymentMethod, setPaymentMethod] = useState<'CAPS_CARD' | 'PREWAR_SBP' | 'BARTER_CASH'>('CAPS_CARD');
 
   // Состояние платежного шлюза
@@ -77,8 +122,10 @@ export const CheckoutPage: React.FC = () => {
     setTimeout(() => {
       const order = placeOrder({
         recipientName,
-        wastelandLocation: `${citySector}, ${streetVault} [Индекс: ${vaultZip}]`,
-        paymentMethod
+        wastelandLocation: `${citySector}, ${streetVault} [Индекс: ${vaultZip}]${landmarkNote ? ` • ${landmarkNote}` : ''}`,
+        paymentMethod,
+        telegram,
+        phone: user.phone
       });
 
       setIsProcessing(false);
@@ -148,6 +195,16 @@ export const CheckoutPage: React.FC = () => {
               <span className="opacity-75">ПОЛУЧАТЕЛЬ:</span>
               <span className="font-bold">{completedOrder.recipientName}</span>
             </div>
+            {completedOrder.telegram && (
+              <div className="flex justify-between border-b pb-1 border-current/30 text-sky-400">
+                <span className="opacity-75">СВЯЗЬ (TELEGRAM):</span>
+                <span className="font-bold font-mono">{completedOrder.telegram}</span>
+              </div>
+            )}
+            <div className="flex justify-between border-b pb-1 border-current/30">
+              <span className="opacity-75">ПУНКТ ВЫДАЧИ:</span>
+              <span className="font-bold text-right max-w-xs truncate">{completedOrder.wastelandLocation}</span>
+            </div>
             <div className="flex justify-between border-b pb-1 border-current/30">
               <span className="opacity-75">МЕТОД ОПЛАТЫ:</span>
               <span className="font-bold">{completedOrder.paymentMethod}</span>
@@ -194,12 +251,50 @@ export const CheckoutPage: React.FC = () => {
           <div className={`border-2 p-5 space-y-6 ${
             isPreWar ? 'border-[#0033A0] bg-white' : 'border-[#15FF0E] bg-black/80'
           }`}>
-            <div className="border-b pb-3 border-current/30">
-              <div className="text-xs uppercase opacity-75 mb-1">[TRADE & BARTER PROTOCOL]</div>
-              <h1 className="text-2xl font-black uppercase tracking-wider flex items-center gap-2">
-                <MapPin className="w-6 h-6" />
-                <span>КООРДИНАТЫ ДОСТАВКИ В ПУСТОШИ</span>
-              </h1>
+            <div className="border-b pb-3 border-current/30 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-xs uppercase opacity-75 mb-1">[TRADE & BARTER PROTOCOL]</div>
+                <h1 className="text-2xl font-black uppercase tracking-wider flex items-center gap-2">
+                  <MapPin className="w-6 h-6 text-red-400" />
+                  <span>КООРДИНАТЫ ДОСТАВКИ В ПУСТОШИ</span>
+                </h1>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLoadFromProfile}
+                className="pipboy-btn px-3 py-1.5 text-xs font-bold uppercase flex items-center gap-1.5 border border-current/40 hover:bg-current/10 transition-colors"
+                title="Заполнить сохраненные данные из личного кабинета"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>ЗАПОЛНИТЬ ИЗ ПРОФИЛЯ ROBCO</span>
+              </button>
+            </div>
+
+            {/* Быстрые пресеты для оформления */}
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] pb-2 border-b border-current/15">
+              <span className="opacity-70 uppercase font-bold text-[10px]">БЫСТРЫЙ ВЫБОР СЕКТОРА:</span>
+              {[
+                { label: 'Новый Вегас', id: 'vegas-lucky38' },
+                { label: 'Даймонд-Сити', id: 'diamond-city' },
+                { label: 'Мегатонна', id: 'megaton' },
+                { label: 'Убежище 67', id: 'vault-67-central' },
+                { label: 'Москва (Центр)', id: 'moscow-center' },
+                { label: 'СПб (Невский)', id: 'spb-nevsky' }
+              ].map((item) => {
+                const p = WASTELAND_ADDRESS_PRESETS.find(x => x.id === item.id);
+                if (!p) return null;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => handleApplyPreset(p)}
+                    className="px-2 py-0.5 border border-current/30 hover:bg-current/15 text-[10px] font-bold"
+                  >
+                    ★ {item.label}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -220,6 +315,28 @@ export const CheckoutPage: React.FC = () => {
               </div>
 
               <div>
+                <label className="block uppercase font-bold mb-1 opacity-90 text-sky-400 flex items-center gap-1.5">
+                  <TelegramIcon className="w-3.5 h-3.5 text-sky-400" />
+                  <span>TELEGRAM ДЛЯ СВЯЗИ С КАРАВАНОМ:</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-sky-400 font-bold">
+                    @
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={telegram.startsWith('@') ? telegram.slice(1) : telegram}
+                    onChange={(e) => setTelegram(e.target.value ? `@${e.target.value.replace(/^@/, '')}` : '')}
+                    className={`w-full pl-7 p-2 border-2 outline-none font-mono text-xs ${
+                      isPreWar ? 'border-[#0033A0] bg-white' : 'border-sky-400 bg-black/60 text-sky-300'
+                    }`}
+                    placeholder="username_wanderer"
+                  />
+                </div>
+              </div>
+
+              <div>
                 <label className="block uppercase font-bold mb-1 opacity-90">
                   ГОРОД / СЕКТОР ПУСТОШИ:
                 </label>
@@ -237,7 +354,7 @@ export const CheckoutPage: React.FC = () => {
 
               <div>
                 <label className="block uppercase font-bold mb-1 opacity-90">
-                  УЛИЦА / НОМЕР БУНКЕРА:
+                  УЛИЦА / НОМЕР БУНКЕРА / СТРОЕНИЕ:
                 </label>
                 <input
                   type="text"
@@ -264,6 +381,21 @@ export const CheckoutPage: React.FC = () => {
                     isPreWar ? 'border-[#0033A0] bg-white' : 'border-[#15FF0E] bg-black/60 text-[#15FF0E]'
                   }`}
                   placeholder="67-VAULT-2077"
+                />
+              </div>
+
+              <div>
+                <label className="block uppercase font-bold mb-1 opacity-90">
+                  ОРИЕНТИР ДЛЯ СБРОСА ГРУЗА:
+                </label>
+                <input
+                  type="text"
+                  value={landmarkNote}
+                  onChange={(e) => setLandmarkNote(e.target.value)}
+                  className={`w-full p-2 border-2 outline-none font-mono text-xs ${
+                    isPreWar ? 'border-[#0033A0] bg-white' : 'border-[#15FF0E] bg-black/60 text-[#15FF0E]'
+                  }`}
+                  placeholder="У турели у главных ворот..."
                 />
               </div>
             </div>

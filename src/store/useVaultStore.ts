@@ -149,6 +149,9 @@ interface VaultStoreState {
     recipientName: string;
     wastelandLocation: string;
     paymentMethod: 'CAPS_CARD' | 'PREWAR_SBP' | 'BARTER_CASH';
+    telegram?: string;
+    phone?: string;
+    addressDetails?: import('../types').AddressDetails;
   }) => Order;
 
   // Админка: CRUD товаров, статусы и склад
@@ -218,8 +221,18 @@ export const useVaultStore = create<VaultStoreState>()(
         avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=256&q=80',
         realName: 'Алексей (Странник Пустоши)',
         email: 'wanderer67@robco.net',
-        phone: 'FREQ-108.4-FM',
-        wastelandAddress: 'Новый Вегас, Стрип, Лаки 38, Люкс 201',
+        phone: '+7 (999) 777-67-67',
+        telegram: '@wanderer_vault67',
+        wastelandAddress: 'Пустошь Мохаве, Новый Вегас, Стрип, Авеню Хауса, Казино Лаки 38, Башня А, Люкс 201 [Индекс: NV-89109-ROBCO]',
+        addressDetails: {
+          region: 'Пустошь Мохаве (Невада)',
+          city: 'Новый Вегас',
+          street: 'Стрип, Авеню Хауса',
+          building: 'Казино Лаки 38, Башня А',
+          apartment: 'Люкс 201 (Верхний пентхаус)',
+          postalCode: 'NV-89109-ROBCO',
+          landmark: 'Шлюз безопасности сектора Стрип, у терминала Мистера Хауса'
+        },
         bio: 'Житель Убежища 67. Исследователь пустошей Мохаве, ценитель ретро-техники RobCo и редких коллекционных голозаписей.',
         level: 18,
         karma: 'МЕССИЯ ПУСТОШИ'
@@ -306,7 +319,7 @@ export const useVaultStore = create<VaultStoreState>()(
         set({ cart: [] });
       },
 
-      placeOrder: ({ recipientName, wastelandLocation, paymentMethod }) => {
+      placeOrder: ({ recipientName, wastelandLocation, paymentMethod, telegram, phone, addressDetails }) => {
         const state = get();
         const totalCaps = state.cart.reduce(
           (sum, item) => sum + item.product.priceCaps * item.quantity,
@@ -323,6 +336,9 @@ export const useVaultStore = create<VaultStoreState>()(
           recipientName,
           wastelandLocation,
           paymentMethod,
+          telegram: telegram || state.user.telegram,
+          phone: phone || state.user.phone,
+          addressDetails: addressDetails || state.user.addressDetails,
           items: [...state.cart],
           totalCaps,
           totalRub,

@@ -148,40 +148,113 @@ export const SearchPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Панель результатов и сортировки */}
-      <div className={`border-2 p-2.5 px-4 text-xs flex flex-wrap items-center justify-between gap-3 ${
-        isPreWar ? 'border-[#0033A0] bg-white' : 'border-[#15FF0E] bg-black/60'
-      }`}>
-        <div className="font-bold uppercase">
-          {query ? (
-            <span>
-              ПО ЗАПРОСУ «<span className="text-amber-400">{query}</span>» НАЙДЕНО: {searchResults.length} ПРЕДМЕТОВ
-            </span>
-          ) : (
-            <span>ВВЕДИТЕ ЗАПРОС ДЛЯ ПОИСКА ПО СКЛАДУ</span>
-          )}
-        </div>
-
-        {searchResults.length > 0 && (
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-3.5 h-3.5 opacity-75" />
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                soundManager.playClick();
-                setSortBy(e.target.value as typeof sortBy);
-              }}
-              className={`border border-current px-2.5 py-1 text-xs font-mono outline-none cursor-pointer ${
-                isPreWar ? 'text-[#0033A0] bg-white' : 'text-[#15FF0E] bg-[#0D1117]'
-              }`}
-            >
-              <option className={isPreWar ? 'bg-white text-[#0033A0]' : 'bg-[#0D1117] text-[#15FF0E]'} value="relevance">ПО РЕЛЕВАНТНОСТИ</option>
-              <option className={isPreWar ? 'bg-white text-[#0033A0]' : 'bg-[#0D1117] text-[#15FF0E]'} value="priceAsc">ЦЕНА: СНАЧАЛА ДЕШЕВЛЕ</option>
-              <option className={isPreWar ? 'bg-white text-[#0033A0]' : 'bg-[#0D1117] text-[#15FF0E]'} value="priceDesc">ЦЕНА: СНАЧАЛА ДОРОЖЕ</option>
-            </select>
+      {/* Панель результатов и сводный заголовок Pip-Boy */}
+      {query && (
+        <div className={`border-2 relative overflow-hidden ${
+          isPreWar 
+            ? 'border-[#0033A0] bg-[#F0F5FF] text-[#1C2331]' 
+            : 'border-[#15FF0E] bg-black/90 text-[#15FF0E]'
+        }`}>
+          {/* Верхняя плашка терминала Pip-Boy */}
+          <div className={`px-4 py-1.5 border-b text-[11px] font-bold tracking-widest flex items-center justify-between uppercase ${
+            isPreWar
+              ? 'bg-[#0033A0] text-white border-[#0033A0]'
+              : 'bg-[#15FF0E]/20 text-[#15FF0E] border-[#15FF0E]/40'
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-current animate-pulse" />
+              <span>ROBCO OS v7.14 // PIP-BOY SCAN SUMMARY</span>
+            </div>
+            <span className="opacity-80">STATUS: {searchResults.length > 0 ? 'MATCH_FOUND' : 'NULL_RESULT'}</span>
           </div>
-        )}
-      </div>
+
+          <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Левый блок с ярким акцентом */}
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className={`p-2.5 border-2 shrink-0 ${
+                isPreWar 
+                  ? 'border-[#0033A0] bg-white text-[#0033A0]' 
+                  : 'border-[#15FF0E] bg-[#15FF0E]/10 text-[#15FF0E]'
+              }`}>
+                <Terminal className="w-6 h-6 animate-pulse" />
+              </div>
+              
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs uppercase opacity-75">ПОИСКОВЫЙ ЗАПРОС:</span>
+                  <span className={`px-2 py-0.5 text-xs font-bold border ${
+                    isPreWar 
+                      ? 'border-[#0033A0] bg-white text-[#0033A0]' 
+                      : 'border-[#15FF0E] bg-black text-[#15FF0E]'
+                  }`}>
+                    «{query}»
+                  </span>
+                </div>
+                
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                    {searchResults.length}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold uppercase opacity-90">
+                    {searchResults.length === 1 
+                      ? 'ПРЕДМЕТ ОБНАРУЖЕН В БАЗЕ' 
+                      : searchResults.length >= 2 && searchResults.length <= 4 
+                        ? 'ПРЕДМЕТА ОБНАРУЖЕНО В БАЗЕ' 
+                        : 'ПРЕДМЕТОВ ОБНАРУЖЕНО В БАЗЕ'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Правый блок со статусом фильтрации / сортировки */}
+            <div className="flex items-center gap-3 self-end sm:self-auto border-t md:border-t-0 pt-3 md:pt-0 w-full md:w-auto justify-between md:justify-end">
+              {searchResults.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 opacity-75" />
+                  <span className="text-[11px] uppercase opacity-75 hidden sm:inline">СОРТИРОВКА:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => {
+                      soundManager.playClick();
+                      setSortBy(e.target.value as typeof sortBy);
+                    }}
+                    className={`border-2 px-3 py-1.5 text-xs font-mono outline-none cursor-pointer font-bold ${
+                      isPreWar 
+                        ? 'border-[#0033A0] text-[#0033A0] bg-white' 
+                        : 'border-[#15FF0E] text-[#15FF0E] bg-[#0D1117]'
+                    }`}
+                  >
+                    <option className={isPreWar ? 'bg-white text-[#0033A0]' : 'bg-[#0D1117] text-[#15FF0E]'} value="relevance">ПО РЕЛЕВАНТНОСТИ</option>
+                    <option className={isPreWar ? 'bg-white text-[#0033A0]' : 'bg-[#0D1117] text-[#15FF0E]'} value="priceAsc">ЦЕНА: СНАЧАЛА ДЕШЕВЛЕ</option>
+                    <option className={isPreWar ? 'bg-white text-[#0033A0]' : 'bg-[#0D1117] text-[#15FF0E]'} value="priceDesc">ЦЕНА: СНАЧАЛА ДОРОЖЕ</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Сканирующая полоса подвала блока в стиле Pip-Boy */}
+          <div className={`px-4 py-1 border-t text-[10px] flex items-center justify-between opacity-70 uppercase ${
+            isPreWar ? 'border-[#0033A0]/30 bg-white/50' : 'border-[#15FF0E]/30 bg-black/60'
+          }`}>
+            <span>СЕКТОР: СВЕРХСЕКРЕТНЫЙ СКЛАД УБЕЖИЩА 67</span>
+            <span>СКАНИРОВАНИЕ ЗАВЕРШЕНО ЗА 0.042s</span>
+          </div>
+        </div>
+      )}
+
+      {/* Если запроса еще нет */}
+      {!query && (
+        <div className={`border-2 p-3 text-xs flex items-center justify-between uppercase font-bold ${
+          isPreWar ? 'border-[#0033A0] bg-white text-[#0033A0]' : 'border-[#15FF0E] bg-black/60 text-[#15FF0E]'
+        }`}>
+          <div className="flex items-center gap-2">
+            <Terminal className="w-4 h-4" />
+            <span>ВВЕДИТЕ ЗАПРОС В ТЕРМИНАЛ ДЛЯ ПОИСКА ПО СКЛАДУ</span>
+          </div>
+          <span className="opacity-70 text-[10px] hidden sm:inline">СКАНЕР ОЖИДАЕТ КОМАНДЫ</span>
+        </div>
+      )}
 
       {/* Сетка результатов или заглушки */}
       {isSearching ? (
