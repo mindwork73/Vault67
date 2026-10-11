@@ -11,6 +11,7 @@ import { HolotapesPage } from './pages/HolotapesPage';
 import { AdminPage } from './pages/AdminPage';
 import { SearchPage } from './pages/SearchPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { useVaultStore } from './store/useVaultStore';
 
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -64,7 +65,8 @@ export default function App() {
           <Route path="payment" element={<HolotapesPage />} />
           <Route path="about" element={<HolotapesPage />} />
           <Route path="admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="404" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
