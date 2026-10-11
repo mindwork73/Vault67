@@ -31,24 +31,17 @@ const TelegramIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' 
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, submitOrder, theme, user } = useVaultStore();
+  const { cart, submitOrder, theme, user, isAuthed } = useVaultStore();
   const isPreWar = theme === 'pre-war';
 
-  // Поля формы с автоматической подстановкой из профиля жителя
-  const [recipientName, setRecipientName] = useState(user.realName || user.callsign || 'Житель Убежища 67');
-  const [citySector, setCitySector] = useState(
-    user.addressDetails?.city 
-      ? `${user.addressDetails.city}, ${user.addressDetails.region}` 
-      : 'Новый Вегас, Пустошь Мохаве'
-  );
-  const [streetVault, setStreetVault] = useState(
-    user.addressDetails?.street 
-      ? `${user.addressDetails.street}, ${user.addressDetails.building}${user.addressDetails.apartment ? `, ${user.addressDetails.apartment}` : ''}` 
-      : 'Стрип, Авеню Хауса, Казино Лаки 38'
-  );
-  const [vaultZip, setVaultZip] = useState(user.addressDetails?.postalCode || 'NV-89109-ROBCO');
-  const [telegram, setTelegram] = useState(user.telegram || '@wanderer_vault67');
-  const [landmarkNote, setLandmarkNote] = useState(user.addressDetails?.landmark || 'Шлюз безопасности сектора');
+  // Поля формы не заполняем демо-данными по умолчанию:
+  // реальный житель подтягивает адрес явной кнопкой «Заполнить из профиля ROBCO».
+  const [recipientName, setRecipientName] = useState('');
+  const [citySector, setCitySector] = useState('');
+  const [streetVault, setStreetVault] = useState('');
+  const [vaultZip, setVaultZip] = useState('');
+  const [telegram, setTelegram] = useState(isAuthed ? (user.telegram || '') : '');
+  const [landmarkNote, setLandmarkNote] = useState('');
 
   // Быстрое автозаполнение из профиля
   const handleLoadFromProfile = () => {
@@ -123,7 +116,7 @@ export const CheckoutPage: React.FC = () => {
         landmark: landmarkNote,
         paymentMethod,
         telegram,
-        phone: user.phone,
+        phone: isAuthed ? (user.phone || undefined) : undefined,
       });
 
       setCompletedOrder(order);

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useVaultStore } from '../store/useVaultStore';
 import { ProductCard } from '../components/catalog/ProductCard';
+import { ProductCardSkeleton } from '../components/catalog/ProductCardSkeleton';
 import { NukaColaVendingMachine } from '../components/common/NukaColaVendingMachine';
 import { soundManager } from '../utils/sound';
 import { CategoryItem, SpecialCategory } from '../types';
@@ -49,7 +50,7 @@ const SPECIAL_CATEGORIES: {
 ];
 
 export const HomePage: React.FC = () => {
-  const { products, categories, theme } = useVaultStore();
+  const { products, categories, theme, catalogLoading } = useVaultStore();
   const isPreWar = theme === 'pre-war';
 
   // Пользовательские разделы, созданные в админке
@@ -95,7 +96,10 @@ export const HomePage: React.FC = () => {
     soundManager.playClick();
   };
 
+  // Витрина: сначала избранное; если админ ничего не отметил — показываем свежий лут,
+  // чтобы секция не оставалась пустой на реальном (не демо) каталоге.
   const featuredProducts = products.filter((p) => p.featured).slice(0, 6);
+  const showcaseProducts = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 3);
 
   return (
     <div className="space-y-12">
@@ -286,15 +290,19 @@ export const HomePage: React.FC = () => {
             onClick={() => soundManager.playTab()}
             className="text-xs font-mono font-bold hover:underline flex items-center gap-1"
           >
-            <span>СМОТРЕТЬ ВСЕ ({products.length})</span>
+            <span>СМОТРЕТЬ ВСЕ ({catalogLoading ? '…' : products.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+          {catalogLoading && products.length === 0 ? (
+            Array.from({ length: 6 }).map((_, idx) => <ProductCardSkeleton key={idx} />)
+          ) : (
+            showcaseProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))
+          )}
         </div>
       </section>
 

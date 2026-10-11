@@ -259,10 +259,7 @@ export const useVaultStore = create<VaultStoreState>()(
       soundEnabled: true,
 
       caps: 4250,
-      cart: [
-        { product: INITIAL_PRODUCTS[0], quantity: 1 },
-        { product: INITIAL_PRODUCTS[4], quantity: 1 }
-      ],
+      cart: [],
       maxWeightWg: 120,
 
       user: {
@@ -293,7 +290,7 @@ export const useVaultStore = create<VaultStoreState>()(
         karma: 'МЕССИЯ ПУСТОШИ'
       },
 
-      products: INITIAL_PRODUCTS.map(p => ({ ...p, status: p.status || 'PUBLISHED' })),
+      products: [],
       orders: INITIAL_ORDERS,
   categories: DEFAULT_CATEGORIES,
   franchises: DEFAULT_FRANCHISES,
@@ -832,7 +829,18 @@ export const useVaultStore = create<VaultStoreState>()(
     }),
     {
       name: 'vault-67-storage',
-      version: 2,
+      version: 3,
+      // При миграции вычищаем из сохранённой корзины мок-позиции с нечисловым
+      // product.id (могут остаться от старых сессий с предзаполненными демо-товарами).
+      // zustand передаёт сюда уже внутреннее состояние (не обёртку {state,version}).
+      migrate: (persistedState: any) => {
+        if (persistedState && Array.isArray(persistedState.cart)) {
+          persistedState.cart = persistedState.cart.filter((item: any) =>
+            /^\d+$/.test(String(item?.product?.id ?? ''))
+          );
+        }
+        return persistedState;
+      },
       // Каталог/заказы/пользователь теперь грузятся из API — не персистим их,
       // храним только локальные UI-настройки и корзину.
       partialize: (state) => ({

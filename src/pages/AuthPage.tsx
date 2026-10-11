@@ -6,7 +6,7 @@ import { useVaultStore } from '../store/useVaultStore';
 
 import { soundManager } from '../utils/sound';
 
-import { Terminal, Lock, User, Key, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Terminal, Lock, User, Key, ShieldCheck, ArrowRight, AlertTriangle } from 'lucide-react';
 
 
 interface AuthPageProps {
@@ -343,6 +343,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ isRegister = false }) => {
           </button>
 
         </form>
+
+
+        {/* Ошибки терминала (доступ/регистрация) */}
+        {errorNotice && (
+          <div className={`p-3 border-2 text-xs font-bold flex items-start gap-2 ${
+            isPreWar ? 'border-red-500 bg-red-50 text-red-600' : 'border-red-500/70 bg-red-950/40 text-red-400'
+          }`}>
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>ОШИБКА: {errorNotice}</span>
+          </div>
+        )}
 
 
         {/* Переключение Вход / Регистрация */}

@@ -16,7 +16,23 @@ async function request(path: string, options: RequestInit = {}) {
   }
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(text || `${res.status} ${res.statusText}`);
+    let message = text || `${res.status} ${res.statusText}`;
+    try {
+      const body = JSON.parse(text);
+      const detail = body?.detail;
+      if (typeof detail === 'string' && detail) {
+        message = detail;
+      } else if (Array.isArray(detail) && detail.length) {
+        const first = detail[0];
+        const loc = Array.isArray(first?.loc) ? first.loc.filter((x: any) => typeof x === 'string').join(', ') : '';
+        message = `${loc ? `${loc}: ` : ''}${first?.msg || 'Некорректные данные'}`;
+      } else if (typeof body?.message === 'string' && body.message) {
+        message = body.message;
+      }
+    } catch {
+      /* текст ошибки уже в message */
+    }
+    throw new Error(message);
   }
   const ct = res.headers.get('content-type') || '';
   if (ct.includes('application/json')) return res.json();

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useVaultStore } from '../store/useVaultStore';
 import { ModelViewer3D } from '../components/product/ModelViewer3D';
 import { soundManager } from '../utils/sound';
+import { Product } from '../types';
 import { 
   ArrowLeft, 
   ShoppingCart, 
@@ -13,7 +14,8 @@ import {
   Check,
   Coins,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 
 export const ProductDetailPage: React.FC = () => {
@@ -24,8 +26,30 @@ export const ProductDetailPage: React.FC = () => {
 
   const [quantity, setQuantity] = useState(1);
   const [addedNotice, setAddedNotice] = useState(false);
+  const [remote, setRemote] = useState<{ status: 'loading' } | { status: 'done'; product: Product } | { status: 'error' }>({ status: 'loading' });
 
-  const product = products.find((p) => p.id === id);
+  const localProduct = products.find((p) => p.id === id);
+  const product = localProduct ?? (remote.status === 'done' ? remote.product : undefined);
+
+  // Карточка может открываться по прямой ссылке раньше, чем догрузится каталог.
+  // Пока объект не найден локально — тянем с API напрямую, не показывая фантомную 404.
+  useEffect(() => {
+    let cancelled = false;
+    if (!localProduct && id) {
+      setRemote({ status: 'loading' });
+      (async () => {
+        try {
+          const { api } = await import('../services/api');
+          const { mapProduct } = await import('../services/adapters');
+          const raw: any = await api.product(id);
+          if (!cancelled) setRemote({ status: 'done', product: mapProduct(raw) });
+        } catch {
+          if (!cancelled) setRemote({ status: 'error' });
+        }
+      })();
+    }
+    return () => { cancelled = true; };
+  }, [id, localProduct]);
 
   // Обработчик клавиши [E] для быстрого добавления в инвентарь
   useEffect(() => {
@@ -42,6 +66,17 @@ export const ProductDetailPage: React.FC = () => {
   }, [product, quantity]);
 
   if (!product) {
+    if (remote.status === 'loading' && !localProduct) {
+      return (
+        <div className={`border-2 p-12 text-center font-mono space-y-4 ${
+          isPreWar ? 'border-[#0033A0] bg-white' : 'border-[#15FF0E] bg-black/80'
+        }`}>
+          <Loader2 className="w-8 h-8 mx-auto animate-spin" />
+          <h2 className="text-xl font-bold uppercase">СВЕРКА С РЕЕСТРОМ ROBCO…</h2>
+          <p className="text-xs opacity-75">Ищем объект в инвентарях Убежища и караванных списках.</p>
+        </div>
+      );
+    }
     return (
       <div className={`border-2 p-12 text-center font-mono space-y-4 ${
         isPreWar ? 'border-[#0033A0] bg-white' : 'border-[#15FF0E] bg-black/80'
