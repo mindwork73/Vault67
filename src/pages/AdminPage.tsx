@@ -573,7 +573,7 @@ export const AdminPage: React.FC = () => {
 
           <button
             onClick={handleExportData}
-            className="pipboy-btn py-2 px-3 text-xs font-bold uppercase flex items-center gap-1.5 border-current hover:bg-current hover:text-black transition-colors"
+            className="pipboy-btn py-2 px-3 text-xs font-bold uppercase flex items-center gap-1.5 border-current hover:bg-current/20 transition-colors"
             title="Экспорт базы в JSON"
           >
             <Download className="w-4 h-4" />
@@ -585,7 +585,7 @@ export const AdminPage: React.FC = () => {
               soundManager.playTab();
               setIsImportModalOpen(true);
             }}
-            className="pipboy-btn py-2 px-3 text-xs font-bold uppercase flex items-center gap-1.5 border-current hover:bg-current hover:text-black transition-colors"
+            className="pipboy-btn py-2 px-3 text-xs font-bold uppercase flex items-center gap-1.5 border-current hover:bg-current/20 transition-colors"
             title="Импорт базы из JSON"
           >
             <Upload className="w-4 h-4" />
@@ -1075,7 +1075,7 @@ export const AdminPage: React.FC = () => {
                         <div className="flex items-center gap-1 border border-current px-1 py-0.5 w-fit">
                           <button
                             onClick={() => updateProductStock(p.id, p.stock - 1)}
-                            className="px-1 hover:bg-current hover:text-black font-bold"
+                            className="px-1 hover:bg-current/20 font-bold"
                             title="Уменьшить остаток"
                           >
                             -
@@ -1091,7 +1091,7 @@ export const AdminPage: React.FC = () => {
                           </span>
                           <button
                             onClick={() => updateProductStock(p.id, p.stock + 1)}
-                            className="px-1 hover:bg-current hover:text-black font-bold"
+                            className="px-1 hover:bg-current/20 font-bold"
                             title="Увеличить остаток"
                           >
                             +
@@ -1142,7 +1142,7 @@ export const AdminPage: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <Link
                             to={`/product/${p.id}`}
-                            className="p-1.5 border border-current hover:bg-current hover:text-black transition-colors"
+                            className="p-1.5 border border-current hover:bg-current/20 transition-colors"
                             title="Посмотреть на витрине"
                           >
                             <Eye className="w-3.5 h-3.5" />
@@ -1150,7 +1150,7 @@ export const AdminPage: React.FC = () => {
 
                           <button
                             onClick={() => handleOpenEditModal(p)}
-                            className="p-1.5 border border-current hover:bg-current hover:text-black transition-colors"
+                            className="p-1.5 border border-current hover:bg-current/20 transition-colors"
                             title="Редактировать товар"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -1491,14 +1491,14 @@ export const AdminPage: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => updateDwellerCaps(dweller.id, -100)}
-                      className="px-1.5 py-0.5 border border-current text-[10px] hover:bg-current hover:text-black font-bold"
+                      className="px-1.5 py-0.5 border border-current text-[10px] hover:bg-current/20 font-bold"
                       title="Списать 100 крышек"
                     >
                       -100
                     </button>
                     <button
                       onClick={() => updateDwellerCaps(dweller.id, 100)}
-                      className="px-1.5 py-0.5 border border-current text-[10px] hover:bg-current hover:text-black font-bold"
+                      className="px-1.5 py-0.5 border border-current text-[10px] hover:bg-current/20 font-bold"
                       title="Начислить 100 крышек"
                     >
                       +100
@@ -1627,7 +1627,7 @@ export const AdminPage: React.FC = () => {
           }`}>
             <button
               onClick={() => setIsAddEditModalOpen(false)}
-              className="absolute top-4 right-4 p-1 hover:bg-current hover:text-[#0D1117] transition-colors"
+              className="absolute top-4 right-4 p-1 hover:bg-current/20 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -2033,7 +2033,7 @@ export const AdminPage: React.FC = () => {
           }`}>
             <button
               onClick={() => setIsAddCatModalOpen(false)}
-              className="absolute top-4 right-4 p-1 hover:bg-current hover:text-[#0D1117]"
+              className="absolute top-4 right-4 p-1 hover:bg-current/20"
             >
               <X className="w-5 h-5" />
             </button>
@@ -2120,7 +2120,7 @@ export const AdminPage: React.FC = () => {
           }`}>
             <button
               onClick={() => setIsAddFranchiseModalOpen(false)}
-              className="absolute top-4 right-4 p-1 hover:bg-current hover:text-[#0D1117]"
+              className="absolute top-4 right-4 p-1 hover:bg-current/20"
             >
               <X className="w-5 h-5" />
             </button>
@@ -2172,7 +2172,7 @@ export const AdminPage: React.FC = () => {
           }`}>
             <button
               onClick={() => setViewingOrder(null)}
-              className="absolute top-4 right-4 p-1 hover:bg-current hover:text-[#0D1117]"
+              className="absolute top-4 right-4 p-1 hover:bg-current/20"
             >
               <X className="w-5 h-5" />
             </button>
@@ -2287,7 +2287,7 @@ export const AdminPage: React.FC = () => {
           }`}>
             <button
               onClick={() => setIsImportModalOpen(false)}
-              className="absolute top-4 right-4 p-1 hover:bg-current hover:text-[#0D1117]"
+              className="absolute top-4 right-4 p-1 hover:bg-current/20"
             >
               <X className="w-5 h-5" />
             </button>

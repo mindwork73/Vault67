@@ -121,7 +121,7 @@ export const StashPage: React.FC = () => {
           <div className="text-xs uppercase tracking-widest opacity-80 mb-1 flex items-center gap-2">
             <span>[TERMLINK: STASH_AND_BARTER_LOGS]</span>
             <span>|</span>
-            <span>СТАТУС ЖИТЕЛЯ: {user.callsign}</span>
+            <span>СТАТУС ЖИТЕЛЯ: {user.callsign || 'ГОСТЬ'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-wider flex items-center gap-2">
             <Package className="w-7 h-7" />
@@ -291,7 +291,7 @@ export const StashPage: React.FC = () => {
                         <div className="flex items-center border border-current">
                           <button
                             onClick={() => updateQuantity(product.id, quantity - 1)}
-                            className="px-2 py-0.5 hover:bg-current hover:text-[#0D1117] transition-colors"
+                            className="px-2 py-0.5 hover:bg-current/20 transition-colors"
                             title="Уменьшить"
                           >
                             <Minus className="w-3 h-3" />
@@ -301,7 +301,7 @@ export const StashPage: React.FC = () => {
                           </span>
                           <button
                             onClick={() => updateQuantity(product.id, quantity + 1)}
-                            className="px-2 py-0.5 hover:bg-current hover:text-[#0D1117] transition-colors"
+                            className="px-2 py-0.5 hover:bg-current/20 transition-colors"
                             title="Увеличить"
                           >
                             <Plus className="w-3 h-3" />
@@ -668,7 +668,7 @@ export const StashPage: React.FC = () => {
           }`}>
             <button
               onClick={() => setSelectedOrderReceipt(null)}
-              className="absolute top-4 right-4 p-1 hover:bg-current hover:text-[#0D1117] transition-colors"
+              className="absolute top-4 right-4 p-1 hover:bg-current/20 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

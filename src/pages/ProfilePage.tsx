@@ -1330,7 +1330,7 @@ export const ProfilePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsAvatarModalOpen(false)}
-                className="text-xs font-bold px-2 py-0.5 border border-current hover:bg-current hover:text-black"
+                className="text-xs font-bold px-2 py-0.5 border border-current hover:bg-current/20"
               >
                 ✕
               </button>

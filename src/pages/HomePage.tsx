@@ -132,7 +132,7 @@ export const HomePage: React.FC = () => {
         </div>
 
         {/* Экран печати терминала */}
-        <div className="font-mono text-xs sm:text-sm space-y-1 min-h-[140px] leading-relaxed">
+        <div className="font-mono text-xs sm:text-sm space-y-1 min-h-[140px] leading-relaxed break-words overflow-hidden">
           {typedLines.map((line, idx) => (
             <div
               key={idx}

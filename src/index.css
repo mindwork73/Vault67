@@ -143,8 +143,11 @@ select:focus, option:focus, option:checked {
 }
 
 .pipboy-btn:hover:not(:disabled) {
-  background-color: currentColor;
-  color: #0D1117 !important;
+  /* Подсветка акцентным цветом кнопки без потери читаемости текста и иконок:
+     раньше здесь был background-color: currentColor + color:#0D1117, из-за чего
+     currentColor тоже становился #0D1117 и кнопка сливалась с фоном. */
+  background-color: color-mix(in srgb, currentColor 22%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, currentColor 50%, transparent);
 }
 
 .pipboy-btn:active:not(:disabled) {

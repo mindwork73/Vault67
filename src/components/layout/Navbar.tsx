@@ -37,6 +37,7 @@ export const Navbar: React.FC = () => {
     scanlines, 
     toggleScanlines,
     user,
+    isAuthed,
     products,
     storeSettings
   } = useVaultStore();
@@ -167,15 +168,27 @@ export const Navbar: React.FC = () => {
               ★ СМОТРИТЕЛЬ
             </Link>
           )}
-          <Link
-            to="/profile"
-            onClick={() => soundManager.playClick()}
-            className="hover:underline font-bold flex items-center gap-1"
-            title="Личный кабинет жителя"
-          >
-            <User className="w-3 h-3 text-current" />
-            <span>ЖИТЕЛЬ: {user.callsign}</span>
-          </Link>
+          {isAuthed ? (
+            <Link
+              to="/profile"
+              onClick={() => soundManager.playClick()}
+              className="hover:underline font-bold flex items-center gap-1"
+              title="Личный кабинет жителя"
+            >
+              <User className="w-3 h-3 text-current" />
+              <span>ЖИТЕЛЬ: {user.callsign || 'гость'}</span>
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              onClick={() => soundManager.playClick()}
+              className="hover:underline font-bold flex items-center gap-1"
+              title="Вход в терминал Убежища 67"
+            >
+              <User className="w-3 h-3 text-current" />
+              <span>ГОСТЬ // ВОЙТИ</span>
+            </Link>
+          )}
         </div>
       </div>
 

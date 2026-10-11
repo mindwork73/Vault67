@@ -128,6 +128,20 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   caravanFeeRub: 350
 };
 
+// Состояние неавторизованного посетителя (гостя). Никаких мок-данных:
+// это «боевой» магазин, поэтому аноним явно отображается как гость и
+// не видит подставной аккаунт/баланс. Реальные данные подтягиваются только
+// через loadUser() при наличии токена.
+export const GUEST_USER: UserProfile = {
+  id: '',
+  callsign: '',
+  vaultId: '',
+  role: 'dweller',
+  capsBalance: 0,
+  radLevel: 0,
+  equippedItems: []
+};
+
 interface VaultStoreState {
   // Тема и оформление
   theme: ThemeMode;
@@ -258,37 +272,11 @@ export const useVaultStore = create<VaultStoreState>()(
       scanlines: true,
       soundEnabled: true,
 
-      caps: 4250,
+      caps: 0,
       cart: [],
       maxWeightWg: 120,
 
-      user: {
-        id: 'DW-67-042',
-        callsign: 'Wanderer_67',
-        vaultId: 'Vault 67',
-        role: 'dweller',
-        capsBalance: 4250,
-        radLevel: 42,
-        equippedItems: ['pipboy-3000'],
-        avatar: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=256&q=80',
-        realName: 'Алексей (Странник Пустоши)',
-        email: 'wanderer67@robco.net',
-        phone: '+7 (999) 777-67-67',
-        telegram: '@wanderer_vault67',
-        wastelandAddress: 'Пустошь Мохаве, Новый Вегас, Стрип, Авеню Хауса, Казино Лаки 38, Башня А, Люкс 201 [Индекс: NV-89109-ROBCO]',
-        addressDetails: {
-          region: 'Пустошь Мохаве (Невада)',
-          city: 'Новый Вегас',
-          street: 'Стрип, Авеню Хауса',
-          building: 'Казино Лаки 38, Башня А',
-          apartment: 'Люкс 201 (Верхний пентхаус)',
-          postalCode: 'NV-89109-ROBCO',
-          landmark: 'Шлюз безопасности сектора Стрип, у терминала Мистера Хауса'
-        },
-        bio: 'Житель Убежища 67. Исследователь пустошей Мохаве, ценитель ретро-техники RobCo и редких коллекционных голозаписей.',
-        level: 18,
-        karma: 'МЕССИЯ ПУСТОШИ'
-      },
+      user: GUEST_USER,
 
       products: [],
       orders: INITIAL_ORDERS,
@@ -799,15 +787,12 @@ export const useVaultStore = create<VaultStoreState>()(
       logout: () => {
         soundManager.playClick();
         localStorage.removeItem('vault67.token');
-        set((state) => ({
+        set({
           isAuthed: false,
-          user: {
-            ...state.user,
-            role: 'dweller',
-            callsign: 'Guest_Wanderer'
-          },
+          user: GUEST_USER,
+          caps: 0,
           cart: []
-        }));
+        });
       },
 
       triggerKonamiBonus: () => {

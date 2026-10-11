@@ -277,7 +277,7 @@ export const ProductDetailPage: React.FC = () => {
                     soundManager.playClick();
                     setQuantity((q) => Math.max(1, q - 1));
                   }}
-                  className="px-3 py-1 hover:bg-current hover:text-[#0D1117] transition-colors"
+                  className="px-3 py-1 hover:bg-current/20 transition-colors"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -289,7 +289,7 @@ export const ProductDetailPage: React.FC = () => {
                     soundManager.playClick();
                     setQuantity((q) => product.stock > 0 ? Math.min(product.stock, q + 1) : q + 1);
                   }}
-                  className="px-3 py-1 hover:bg-current hover:text-[#0D1117] transition-colors"
+                  className="px-3 py-1 hover:bg-current/20 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
