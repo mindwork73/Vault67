@@ -303,7 +303,7 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* Навигационные ссылки */}
-        <nav className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-mono uppercase tracking-wider font-bold order-2 md:order-3">
+        <nav className="hidden md:flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-mono uppercase tracking-wider font-bold order-2 md:order-3">
           <Link
             to="/"
             onClick={() => soundManager.playTab()}
