@@ -6,3 +6,13 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Python backend (server/)
+__pycache__/
+*.pyc
+*.db
+server/.venv/
+server/smoke_uploads/
+
+# Runtime data (sqlite / bot state), kept on the host, not in git
+/data/
