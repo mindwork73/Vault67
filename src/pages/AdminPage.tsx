@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useVaultStore } from '../store/useVaultStore';
 import { 
@@ -9,6 +9,7 @@ import {
   DwellerRecord 
 } from '../types';
 import { soundManager } from '../utils/sound';
+import { mediaUrl } from '../services/adapters';
 import { 
   Terminal, 
   Package, 
@@ -74,6 +75,7 @@ export const AdminPage: React.FC = () => {
     deleteFranchise,
     updateOrderStatus,
     deleteOrder,
+    loadAllOrders,
     updateDwellerCaps,
     toggleDwellerStatus,
     updateStoreSettings,
@@ -84,6 +86,13 @@ export const AdminPage: React.FC = () => {
 
   // Активная вкладка админки
   const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'categories' | 'orders' | 'dwellers' | 'settings'>('products');
+
+  // Админка: подтягиваем все заказы из API при переходе на вкладку заказов
+  useEffect(() => {
+    if (activeTab === 'orders' && user?.role === 'overseer') {
+      void loadAllOrders();
+    }
+  }, [activeTab, user?.role, loadAllOrders]);
 
   // Фильтры и поиск в реестре товаров
   const [productSearch, setProductSearch] = useState('');
@@ -328,17 +337,25 @@ export const AdminPage: React.FC = () => {
     const remainingSlots = 10 - formImages.length;
     const filesToLoad = Array.from(files).slice(0, remainingSlots);
 
-    filesToLoad.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setFormImages((prev) => {
-            if (prev.length >= 10) return prev;
-            return [...prev, event.target!.result as string];
-          });
-        }
-      };
-      reader.readAsDataURL(file);
+    filesToLoad.forEach(async (file) => {
+      try {
+        const { api } = await import('../services/api');
+        const res: any = await api.upload(file);
+        const path = res?.path || res?.url;
+        if (!path) throw new Error('upload failed');
+        setFormImages((prev) => (prev.length >= 10 ? prev : [...prev, path]));
+      } catch {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setFormImages((prev) => {
+              if (prev.length >= 10) return prev;
+              return [...prev, event.target!.result as string];
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
     });
   };
 
@@ -1874,7 +1891,7 @@ export const AdminPage: React.FC = () => {
                     {formImages.map((img, idx) => (
                       <div key={idx} className="relative group border-2 border-current p-1 bg-black/40 space-y-1">
                         <div className="h-24 w-full overflow-hidden">
-                          <img src={img} alt="" className="w-full h-full object-cover" />
+                          <img src={mediaUrl(img)} alt="" className="w-full h-full object-cover" />
                         </div>
 
                         <div className="flex items-center justify-between text-[10px]">

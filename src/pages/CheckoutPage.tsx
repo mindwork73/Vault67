@@ -31,7 +31,7 @@ const TelegramIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' 
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, placeOrder, caps, theme, user } = useVaultStore();
+  const { cart, submitOrder, theme, user } = useVaultStore();
   const isPreWar = theme === 'pre-war';
 
   // Поля формы с автоматической подстановкой из профиля жителя
@@ -80,6 +80,7 @@ export const CheckoutPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [gatewayStep, setGatewayStep] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
   const totalCaps = cart.reduce((sum, item) => sum + item.product.priceCaps * item.quantity, 0);
   const totalRub = cart.reduce((sum, item) => sum + item.product.priceRub * item.quantity, 0);
@@ -103,32 +104,28 @@ export const CheckoutPage: React.FC = () => {
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     soundManager.playClick();
     setIsProcessing(true);
+    setError(null);
 
-    // Имитация процесса через платежный шлюз RobCo
     setGatewayStep('УСТАНОВЛЕНИЕ КВАНТОВОЙ СВЯЗИ С БУНКЕРОМ...');
-
-    setTimeout(() => {
-      setGatewayStep('ПРОВЕРКА ПОДЛИННОСТИ КРЫШЕК И СЕРТИФИКАТОВ...');
+    const timer = setTimeout(() => {
+      setGatewayStep('РЕГИСТРАЦИЯ КАРАВАНА В РЕЕСТРЕ СМОТРИТЕЛЯ...');
     }, 900);
 
-    setTimeout(() => {
-      setGatewayStep('РЕГИСТРАЦИЯ КАРАВАНА В РЕЕСТРЕ СМОТРИТЕЛЯ...');
-    }, 1800);
-
-    setTimeout(() => {
-      const order = placeOrder({
+    try {
+      const order = await submitOrder({
         recipientName,
-        wastelandLocation: `${citySector}, ${streetVault} [Индекс: ${vaultZip}]${landmarkNote ? ` • ${landmarkNote}` : ''}`,
+        city: citySector,
+        postalCode: vaultZip,
+        landmark: landmarkNote,
         paymentMethod,
         telegram,
-        phone: user.phone
+        phone: user.phone,
       });
 
-      setIsProcessing(false);
       setCompletedOrder(order);
 
       try {
@@ -139,9 +136,14 @@ export const CheckoutPage: React.FC = () => {
           colors: ['#15FF0E', '#FFD100', '#0033A0']
         });
       } catch {
-        // ignore
+        /* noop */
       }
-    }, 2800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось оформить заказ. Попробуйте позже.');
+    } finally {
+      clearTimeout(timer);
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -485,6 +487,11 @@ export const CheckoutPage: React.FC = () => {
                 <span className="text-2xl sm:text-3xl font-black tracking-tight font-mono">
                   {totalRub.toLocaleString()} ₽
                 </span>
+                {error && (
+                  <p className="text-xs text-red-400 font-bold mt-2 max-w-xs">
+                    ⚠ {error}
+                  </p>
+                )}
               </div>
 
               <button

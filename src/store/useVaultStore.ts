@@ -16,6 +16,31 @@ import {
 import { INITIAL_ORDERS, INITIAL_PRODUCTS } from '../data/mockProducts';
 import { soundManager } from '../utils/sound';
 
+// Товары, созданные локально (без backend id), не синхронизируем — только числовые id.
+const toNumericId = (id: string): number | null => (/^\d+$/.test(id) ? Number(id) : null);
+
+async function apiPatchProduct(id: string, data: Record<string, unknown>) {
+  const numeric = toNumericId(id);
+  if (numeric === null) return;
+  try {
+    const { api } = await import('../services/api');
+    await api.updateProduct(numeric, data);
+  } catch {
+    /* оставляем оптимистичное локальное состояние */
+  }
+}
+
+async function apiDeleteProduct(id: string) {
+  const numeric = toNumericId(id);
+  if (numeric === null) return;
+  try {
+    const { api } = await import('../services/api');
+    await api.deleteProduct(numeric);
+  } catch {
+    /* ignore */
+  }
+}
+
 export const DEFAULT_CATEGORIES: CategoryItem[] = [
   { id: 'cat-str', key: 'STRENGTH', name: 'Сила [STR]', icon: '💪', description: 'Фигурки, статуи и реплики оружия' },
   { id: 'cat-per', key: 'PERCEPTION', name: 'Восприятие [PER]', icon: '👁️', description: 'Оптика, ночники, постеры и арт-принты' },
@@ -123,6 +148,8 @@ interface VaultStoreState {
   orders: Order[];
   categories: CategoryItem[];
   franchises: string[];
+  apiCategories: any[];
+  apiFranchises: any[];
   dwellers: DwellerRecord[];
   storeSettings: StoreSettings;
 
@@ -153,6 +180,21 @@ interface VaultStoreState {
     phone?: string;
     addressDetails?: import('../types').AddressDetails;
   }) => Order;
+
+  submitOrder: (data: {
+    recipientName: string;
+    telegram?: string;
+    phone?: string;
+    region?: string;
+    city?: string;
+    street?: string;
+    building?: string;
+    apartment?: string;
+    postalCode?: string;
+    landmark?: string;
+    paymentMethod: string;
+    comment?: string;
+  }) => Promise<Order>;
 
   // Админка: CRUD товаров, статусы и склад
   addProduct: (product: Product) => void;
@@ -185,8 +227,21 @@ interface VaultStoreState {
   updateStoreSettings: (settings: Partial<StoreSettings>) => void;
   importStoreData: (data: { products?: Product[]; categories?: CategoryItem[]; franchises?: string[] }) => void;
 
+  // Загрузка данных из API
+  catalogLoading: boolean;
+  catalogLoaded: boolean;
+  authChecked: boolean;
+  isAuthed: boolean;
+  loadCatalog: () => Promise<void>;
+  loadSettings: () => Promise<void>;
+  loadUser: () => Promise<void>;
+  loadMyOrders: () => Promise<void>;
+  loadAllOrders: () => Promise<void>;
+  handleUnauthorized: () => void;
+
   // Авторизация и профиль
   loginAs: (role: 'dweller' | 'overseer', callsign?: string) => void;
+  login: (email: string, password: string) => Promise<void>;
   updateUserProfile: (profileData: Partial<UserProfile>) => void;
   logout: () => void;
 
@@ -240,10 +295,17 @@ export const useVaultStore = create<VaultStoreState>()(
 
       products: INITIAL_PRODUCTS.map(p => ({ ...p, status: p.status || 'PUBLISHED' })),
       orders: INITIAL_ORDERS,
-      categories: DEFAULT_CATEGORIES,
-      franchises: DEFAULT_FRANCHISES,
+  categories: DEFAULT_CATEGORIES,
+  franchises: DEFAULT_FRANCHISES,
+  apiCategories: [],
+  apiFranchises: [],
       dwellers: DEFAULT_DWELLERS,
       storeSettings: DEFAULT_SETTINGS,
+
+      catalogLoading: false,
+      catalogLoaded: false,
+      authChecked: false,
+      isAuthed: false,
 
       konamiModalOpen: false,
       preWarUnlockedAlert: false,
@@ -364,11 +426,56 @@ export const useVaultStore = create<VaultStoreState>()(
         return newOrder;
       },
 
+      submitOrder: async (data) => {
+        const { api } = await import('../services/api');
+        const { mapOrder } = await import('../services/adapters');
+        const res = await api.createOrder({
+          recipient_name: data.recipientName,
+          phone: data.phone ?? null,
+          telegram: data.telegram ?? null,
+          region: data.region ?? null,
+          city: data.city ?? null,
+          street: data.street ?? null,
+          building: data.building ?? null,
+          apartment: data.apartment ?? null,
+          postal_code: data.postalCode ?? null,
+          landmark: data.landmark ?? null,
+          payment_method: data.paymentMethod,
+          comment: data.comment ?? null,
+          items: get().cart.map((item) => ({
+            product_id: Number(item.product.id),
+            quantity: item.quantity,
+          })),
+        });
+        const order = mapOrder(res);
+        set((state) => ({ orders: [order, ...state.orders], cart: [] }));
+        soundManager.playCaps();
+        return order;
+      },
+
       addProduct: (product: Product) => {
         soundManager.playFanfare();
         set((state) => ({
           products: [product, ...state.products]
         }));
+        (async () => {
+          try {
+            const { api } = await import('../services/api');
+            const { mapProductInput, mapProduct } = await import('../services/adapters');
+            const state = get();
+            const payload = mapProductInput(product, {
+              categories: state.apiCategories,
+              franchises: state.apiFranchises,
+            });
+            const created: any = await api.createProduct(payload);
+            const mapped = mapProduct(created);
+            set((s) => ({
+              products: s.products.map((p) => (p.id === product.id ? mapped : p)),
+            }));
+          } catch {
+            /* остаётся локальная версия */
+          }
+        })();
       },
 
       updateProduct: (product: Product) => {
@@ -376,6 +483,26 @@ export const useVaultStore = create<VaultStoreState>()(
         set((state) => ({
           products: state.products.map((p) => (p.id === product.id ? product : p))
         }));
+        (async () => {
+          const numeric = toNumericId(product.id);
+          if (numeric === null) return;
+          try {
+            const { api } = await import('../services/api');
+            const { mapProductInput, mapProduct } = await import('../services/adapters');
+            const state = get();
+            const payload = mapProductInput(product, {
+              categories: state.apiCategories,
+              franchises: state.apiFranchises,
+            });
+            const updated: any = await api.updateProduct(numeric, payload);
+            const mapped = mapProduct(updated);
+            set((s) => ({
+              products: s.products.map((p) => (p.id === product.id ? mapped : p)),
+            }));
+          } catch {
+            /* optimistic: остаётся локальная версия */
+          }
+        })();
       },
 
       deleteProduct: (productId: string) => {
@@ -384,6 +511,7 @@ export const useVaultStore = create<VaultStoreState>()(
           products: state.products.filter((p) => p.id !== productId),
           cart: state.cart.filter((item) => item.product.id !== productId)
         }));
+        void apiDeleteProduct(productId);
       },
 
       clearAllProducts: () => {
@@ -408,6 +536,17 @@ export const useVaultStore = create<VaultStoreState>()(
             o.id === orderId ? { ...o, status } : o
           )
         }));
+        const apiId = get().orders.find((o) => o.id === orderId)?.apiId;
+        if (apiId) {
+          (async () => {
+            try {
+              const { api } = await import('../services/api');
+              await api.updateOrderStatus(apiId, { status });
+            } catch {
+              /* ignore */
+            }
+          })();
+        }
       },
 
       deleteOrder: (orderId: string) => {
@@ -424,6 +563,7 @@ export const useVaultStore = create<VaultStoreState>()(
             p.id === productId ? { ...p, status } : p
           )
         }));
+        void apiPatchProduct(productId, { status });
       },
 
       bulkUpdateProductStatus: (productIds: string[], status: ProductStatus) => {
@@ -433,6 +573,7 @@ export const useVaultStore = create<VaultStoreState>()(
             productIds.includes(p.id) ? { ...p, status } : p
           )
         }));
+        productIds.forEach((id) => void apiPatchProduct(id, { status }));
       },
 
       bulkDeleteProducts: (productIds: string[]) => {
@@ -441,24 +582,29 @@ export const useVaultStore = create<VaultStoreState>()(
           products: state.products.filter((p) => !productIds.includes(p.id)),
           cart: state.cart.filter((item) => !productIds.includes(item.product.id))
         }));
+        productIds.forEach((id) => void apiDeleteProduct(id));
       },
 
       toggleProductFeatured: (productId: string) => {
         soundManager.playClick();
+        const nextFeatured = !(get().products.find((p) => p.id === productId)?.featured ?? false);
         set((state) => ({
           products: state.products.map((p) =>
             p.id === productId ? { ...p, featured: !p.featured } : p
           )
         }));
+        void apiPatchProduct(productId, { featured: nextFeatured });
       },
 
       updateProductStock: (productId: string, stock: number) => {
         soundManager.playClick();
+        const nextStock = Math.max(0, stock);
         set((state) => ({
           products: state.products.map((p) =>
-            p.id === productId ? { ...p, stock: Math.max(0, stock) } : p
+            p.id === productId ? { ...p, stock: nextStock } : p
           )
         }));
+        void apiPatchProduct(productId, { stock: nextStock });
       },
 
       addCategory: (category: CategoryItem) => {
@@ -523,6 +669,21 @@ export const useVaultStore = create<VaultStoreState>()(
         set((state) => ({
           storeSettings: { ...state.storeSettings, ...newSettings }
         }));
+        const store: Record<string, unknown> = {};
+        if ('announcement' in newSettings) store.announcement = newSettings.announcement;
+        if ('announcementActive' in newSettings) store.announcementActive = newSettings.announcementActive;
+        if ('minOrderRub' in newSettings) store.minOrderRub = newSettings.minOrderRub;
+        if ('caravanFeeRub' in newSettings) store.caravanFeeRub = newSettings.caravanFeeRub;
+        if (Object.keys(store).length > 0) {
+          (async () => {
+            try {
+              const { api } = await import('../services/api');
+              await api.updateSettings({ store });
+            } catch {
+              /* ignore */
+            }
+          })();
+        }
       },
 
       importStoreData: (data) => {
@@ -544,25 +705,111 @@ export const useVaultStore = create<VaultStoreState>()(
         }));
       },
 
+      loadCatalog: async () => {
+        const { api } = await import('../services/api');
+        const { mapProduct, mapFranchiseName } = await import('../services/adapters');
+        if (get().catalogLoading) return;
+        set({ catalogLoading: true });
+        try {
+          const [rawProducts, rawFranchises, rawCategories] = await Promise.all([
+            api.products({ limit: 200 }),
+            api.franchises().catch(() => []),
+            api.categories().catch(() => []),
+          ]);
+          set((state) => ({
+            products: (rawProducts as any[]).map(mapProduct),
+            franchises: (rawFranchises as any[]).length
+              ? (rawFranchises as any[]).map(mapFranchiseName).filter(Boolean)
+              : state.franchises,
+            apiFranchises: (rawFranchises as any[]) || [],
+            apiCategories: (rawCategories as any[]) || [],
+          }));
+        } finally {
+          set({ catalogLoading: false, catalogLoaded: true });
+        }
+      },
+
+      loadSettings: async () => {
+        const { api } = await import('../services/api');
+        const { mapSettings } = await import('../services/adapters');
+        try {
+          const res: any = await api.settings();
+          const mapped = mapSettings(res?.store);
+          set((state) => ({ storeSettings: { ...state.storeSettings, ...mapped } }));
+        } catch {
+          /* оставляем дефолтные настройки */
+        }
+      },
+
+      loadUser: async () => {
+        const token = localStorage.getItem('vault67.token');
+        if (!token) {
+          set({ authChecked: true, isAuthed: false });
+          return;
+        }
+        const { api } = await import('../services/api');
+        const { mapUser } = await import('../services/adapters');
+        try {
+          const me = await api.me();
+          set({ user: mapUser(me), isAuthed: true });
+        } catch {
+          localStorage.removeItem('vault67.token');
+          set({ isAuthed: false });
+        } finally {
+          set({ authChecked: true });
+        }
+      },
+
+      loadMyOrders: async () => {
+        const token = localStorage.getItem('vault67.token');
+        if (!token) return;
+        const { api } = await import('../services/api');
+        const { mapOrder } = await import('../services/adapters');
+        const res = await api.myOrders();
+        set({ orders: (res as any[]).map(mapOrder) });
+      },
+
+      loadAllOrders: async () => {
+        const { api } = await import('../services/api');
+        const { mapOrder } = await import('../services/adapters');
+        const res = await api.allOrders();
+        set({ orders: (res as any[]).map(mapOrder) });
+      },
+
+      handleUnauthorized: () => {
+        get().logout();
+      },
+
+      login: async (email: string, password: string) => {
+        const { api } = await import('../services/api');
+        const { mapUser } = await import('../services/adapters');
+        const res = await api.login(email, password);
+        localStorage.setItem('vault67.token', res.access_token);
+        set({ user: mapUser(res.user), authChecked: true, isAuthed: true });
+      },
       loginAs: (role: 'dweller' | 'overseer', callsign = 'VaultDweller_67') => {
         soundManager.playTab();
         set((state) => ({
           user: {
             ...state.user,
             role,
-            callsign: role === 'overseer' ? 'Overseer Barstow' : callsign
+            callsign: role === 'overseer' ? 'Overseer Barstow' : callsign,
+            email: role === 'overseer' ? 'overseer@vault67.ru' : (state.user?.email || 'dweller@vault67.ru'),
           }
         }));
       },
 
       logout: () => {
         soundManager.playClick();
+        localStorage.removeItem('vault67.token');
         set((state) => ({
+          isAuthed: false,
           user: {
             ...state.user,
             role: 'dweller',
             callsign: 'Guest_Wanderer'
-          }
+          },
+          cart: []
         }));
       },
 
@@ -584,7 +831,19 @@ export const useVaultStore = create<VaultStoreState>()(
       }
     }),
     {
-      name: 'vault-67-storage'
+      name: 'vault-67-storage',
+      version: 2,
+      // Каталог/заказы/пользователь теперь грузятся из API — не персистим их,
+      // храним только локальные UI-настройки и корзину.
+      partialize: (state) => ({
+        theme: state.theme,
+        pipBoyColor: state.pipBoyColor,
+        scanlines: state.scanlines,
+        soundEnabled: state.soundEnabled,
+        caps: state.caps,
+        maxWeightWg: state.maxWeightWg,
+        cart: state.cart,
+      }),
     }
   )
 );

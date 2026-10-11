@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useVaultStore } from '../store/useVaultStore';
 import { soundManager } from '../utils/sound';
@@ -38,9 +38,16 @@ export const StashPage: React.FC = () => {
     clearCart, 
     maxWeightWg, 
     theme,
-    user 
+    user,
+    isAuthed,
+    loadMyOrders
   } = useVaultStore();
   const isPreWar = theme === 'pre-war';
+
+  // Подгружаем историю заказов пользователя из API
+  useEffect(() => {
+    if (isAuthed) loadMyOrders().catch(() => undefined);
+  }, [isAuthed, loadMyOrders]);
 
   // Вычисляем активную вкладку напрямую из search параметров текущего URL (всегда синхронизировано)
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);

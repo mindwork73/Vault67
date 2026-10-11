@@ -38,11 +38,11 @@ const SPECIAL_KEYS: { key: SpecialCategory; label: string }[] = [
 
 export const CatalogPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { products, categories, franchises, user, theme } = useVaultStore();
+  const { products, categories, franchises, user, theme, catalogLoading, catalogLoaded, loadCatalog } = useVaultStore();
   const isPreWar = theme === 'pre-war';
 
-  // Имитация асинхронного API-запроса к базе данных терминала RobCo
-  const [isLoading, setIsLoading] = useState(true);
+  // Статус загрузки: пока каталог не подгружен из API — показываем скелетоны
+  const isLoading = catalogLoading || !catalogLoaded;
   const [loadingStep, setLoadingStep] = useState('ОПРОС СЕРВЕРОВ VAULT-TEC...');
 
   // Состояния фильтрации
@@ -57,24 +57,22 @@ export const CatalogPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'priceAsc' | 'priceDesc' | 'weight' | 'condition'>('priceAsc');
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
-  // Имитация сетевого запроса к API при первом открытии каталога
+  // Загрузка каталога из API при первом открытии
   useEffect(() => {
-    setIsLoading(true);
+    let cancelled = false;
     setLoadingStep('ПОДКЛЮЧЕНИЕ К ХРАНИЛИЩУ РЕЛИКВИЙ...');
 
-    const timer1 = setTimeout(() => {
-      setLoadingStep('ДЕШИФРОВКА СВИНЦОВЫХ МАНИФЕСТОВ...');
+    const timer = setTimeout(() => {
+      if (!cancelled) setLoadingStep('ДЕШИФРОВКА СВИНЦОВЫХ МАНИФЕСТОВ...');
     }, 350);
 
-    const timer2 = setTimeout(() => {
-      setIsLoading(false);
-    }, 750);
+    loadCatalog().catch(() => undefined);
 
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
+      cancelled = true;
+      clearTimeout(timer);
     };
-  }, []);
+  }, [loadCatalog]);
 
   // Синхронизация при изменении URL параметра категории
   useEffect(() => {
@@ -86,11 +84,8 @@ export const CatalogPage: React.FC = () => {
   // Ручной перезапрос данных
   const handleReloadData = () => {
     soundManager.playClick();
-    setIsLoading(true);
     setLoadingStep('ПОВТОРНОЕ СКАНИРОВАНИЕ РАДИОЗОНДОМ...');
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 600);
+    loadCatalog().catch(() => undefined);
   };
 
   // Переключение франшизы

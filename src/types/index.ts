@@ -84,6 +84,7 @@ export interface AddressDetails {
 
 export interface Order {
   id: string;
+  apiId?: number; // Числовой id заказа в БД (для админских PATCH-запросов)
   date: string;
   recipientName: string;
   wastelandLocation: string;

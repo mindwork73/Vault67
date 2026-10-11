@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useVaultStore } from '../store/useVaultStore';
 import { soundManager } from '../utils/sound';
@@ -67,7 +67,7 @@ const AVATAR_PRESETS = [
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, updateUserProfile, orders, logout, loginAs, theme } = useVaultStore();
+  const { user, updateUserProfile, orders, logout, loginAs, theme, isAuthed } = useVaultStore();
   const isPreWar = theme === 'pre-war';
 
   // Локальные состояния контактов и пользователя
@@ -78,13 +78,13 @@ export const ProfilePage: React.FC = () => {
   const [telegram, setTelegram] = useState(user.telegram || '@wanderer_vault67');
 
   // Детальные поля адреса доставки
-  const [region, setRegion] = useState(user.addressDetails?.region || 'Пустошь Мохаве (Невада)');
-  const [city, setCity] = useState(user.addressDetails?.city || 'Новый Вегас');
-  const [street, setStreet] = useState(user.addressDetails?.street || 'Стрип, Авеню Хауса');
-  const [building, setBuilding] = useState(user.addressDetails?.building || 'Казино Лаки 38, Башня А');
-  const [apartment, setApartment] = useState(user.addressDetails?.apartment || 'Люкс 201 (Верхний пентхаус)');
-  const [postalCode, setPostalCode] = useState(user.addressDetails?.postalCode || 'NV-89109-ROBCO');
-  const [landmark, setLandmark] = useState(user.addressDetails?.landmark || 'Шлюз безопасности сектора Стрип, у терминала Мистера Хауса');
+  const [region, setRegion] = useState(user.addressDetails?.region || '');
+  const [city, setCity] = useState(user.addressDetails?.city || '');
+  const [street, setStreet] = useState(user.addressDetails?.street || '');
+  const [building, setBuilding] = useState(user.addressDetails?.building || '');
+  const [apartment, setApartment] = useState(user.addressDetails?.apartment || '');
+  const [postalCode, setPostalCode] = useState(user.addressDetails?.postalCode || '');
+  const [landmark, setLandmark] = useState(user.addressDetails?.landmark || '');
 
   // Состояния реального автозаполнения и подсказок
   const [realAddressSuggestions, setRealAddressSuggestions] = useState<RealAddressResult[]>([]);
@@ -93,6 +93,7 @@ export const ProfilePage: React.FC = () => {
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
   const [streetSuggestions, setStreetSuggestions] = useState<string[]>([]);
   const [isStreetDropdownOpen, setIsStreetDropdownOpen] = useState(false);
+  const [geoResults, setGeoResults] = useState<any[]>([]);
 
   const [bio, setBio] = useState(user.bio || 'Житель Убежища 67. Исследователь Пустоши, коллекционер раритетного мерча и реплик RobCo.');
   const [avatar, setAvatar] = useState(user.avatar || AVATAR_PRESETS[0].url);
@@ -303,6 +304,46 @@ export const ProfilePage: React.FC = () => {
     setTimeout(() => setAutoFilledNotice(null), 3500);
   };
 
+  // Применение результата реального геокодера (/api/geo/search)
+  const applyGeo = (r: any) => {
+    soundManager.playBeep();
+    setRegion(r.region || '');
+    setCity(r.city || '');
+    setStreet(r.street || '');
+    setBuilding(r.building || '');
+    setApartment(r.apartment || '');
+    setPostalCode(r.postal_code || '');
+    setLandmark(r.label || '');
+    setAddressSearchQuery(r.label || r.city || '');
+    setGeoResults([]);
+    setIsAddressDropdownOpen(false);
+    setAutoFilledNotice(`✓ АДРЕС ОПРЕДЕЛЁН: ${r.label || r.city || ''}`);
+    setTimeout(() => setAutoFilledNotice(null), 3500);
+  };
+
+  // Живой поиск через серверный геокодер (debounce 400мс)
+  useEffect(() => {
+    const q = addressSearchQuery.trim();
+    if (q.length < 3) {
+      setGeoResults([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const { api } = await import('../services/api');
+        const res: any = await api.geoSearch(q);
+        if (!cancelled) setGeoResults(Array.isArray(res) ? res : []);
+      } catch {
+        if (!cancelled) setGeoResults([]);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [addressSearchQuery]);
+
   // Сканирование GPS/радиомаяка RobCo
   const handleScanGpsBeacon = () => {
     soundManager.playGeiger();
@@ -340,6 +381,17 @@ export const ProfilePage: React.FC = () => {
     e.preventDefault();
     soundManager.playClick();
 
+    const addressDetails = {
+      region: region.trim(),
+      city: city.trim(),
+      street: street.trim(),
+      building: building.trim(),
+      apartment: apartment.trim(),
+      postalCode: postalCode.trim(),
+      landmark: landmark.trim()
+    };
+
+    // Оптимистичное обновление локального состояния (поля, которых нет в API, тоже)
     updateUserProfile({
       callsign: callsign.trim() || user.callsign,
       realName: realName.trim(),
@@ -347,18 +399,36 @@ export const ProfilePage: React.FC = () => {
       phone: phone.trim(),
       telegram: telegram.trim(),
       wastelandAddress: formattedAddress,
-      addressDetails: {
-        region: region.trim(),
-        city: city.trim(),
-        street: street.trim(),
-        building: building.trim(),
-        apartment: apartment.trim(),
-        postalCode: postalCode.trim(),
-        landmark: landmark.trim()
-      },
+      addressDetails,
       bio: bio.trim(),
       avatar
     });
+
+    // Синхронизация с бэкендом (если пользователь авторизован)
+    if (isAuthed) {
+      (async () => {
+        try {
+          const { api } = await import('../services/api');
+          const { mapUser } = await import('../services/adapters');
+          const res = await api.updateMe({
+            callsign: callsign.trim() || undefined,
+            phone: phone.trim() || undefined,
+            avatar: avatar || undefined,
+            bio: bio.trim() || undefined,
+            region: region.trim() || undefined,
+            city: city.trim() || undefined,
+            street: street.trim() || undefined,
+            building: building.trim() || undefined,
+            apartment: apartment.trim() || undefined,
+            postal_code: postalCode.trim() || undefined,
+            landmark: landmark.trim() || undefined,
+          });
+          updateUserProfile(mapUser(res));
+        } catch {
+          /* локальные изменения сохранены; ошибку синка игнорируем */
+        }
+      })();
+    }
 
     setIsSavedBanner(true);
     setTimeout(() => setIsSavedBanner(false), 3000);
@@ -828,6 +898,41 @@ export const ProfilePage: React.FC = () => {
                           <span>НАЙДЕНО ЛОКАЦИЙ В КАРТЕ ПУСТОШИ ({filteredPresets.length})</span>
                           <span>ВЫБЕРИТЕ ДЛЯ АВТОЗАПОЛНЕНИЯ</span>
                         </div>
+
+                        {/* Реальные результаты геокодера (адреса РФ) */}
+                        {geoResults.length > 0 && (
+                          <div className="border-b border-current/20">
+                            <div className="px-2 py-1 text-[10px] uppercase font-bold text-amber-400 bg-current/5 flex items-center gap-1">
+                              <Navigation className="w-3 h-3" />
+                              <span>РЕАЛЬНЫЕ АДРЕСА ({geoResults.length})</span>
+                            </div>
+                            <div className="divide-y divide-current/15">
+                              {geoResults.map((r, i) => (
+                                <div
+                                  key={`geo-${i}`}
+                                  onClick={() => applyGeo(r)}
+                                  className={`p-2.5 cursor-pointer transition-colors flex items-start justify-between gap-3 ${
+                                    isPreWar ? 'hover:bg-blue-50' : 'hover:bg-emerald-500/15'
+                                  }`}
+                                >
+                                  <div className="space-y-0.5">
+                                    <div className="font-bold flex items-center gap-1.5">
+                                      <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                      <span>{r.label || r.city}</span>
+                                    </div>
+                                    <div className="text-[11px] opacity-75">
+                                      {[r.region, r.city, r.street, r.building].filter(Boolean).join(', ')}
+                                      {r.postal_code ? ` [${r.postal_code}]` : ''}
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-emerald-400 shrink-0 self-center">
+                                    [ВЫБРАТЬ]
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         {filteredPresets.length === 0 ? (
                           <div className="p-4 text-center text-xs opacity-70">
